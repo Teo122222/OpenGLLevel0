@@ -15,7 +15,9 @@ using namespace _3dgl;
 using namespace glm;
 
 // 3D models
-C3dglModel camera;
+C3dglModel table;
+C3dglModel vase;
+C3dglModel teapot;
 
 // The View Matrix
 mat4 matrixView;
@@ -39,7 +41,10 @@ bool init()
 	glEnable(GL_LIGHT0);									// --- DEPRECATED
 
 	// load your 3D models here!
-	if (!camera.load("models\\camera.3ds")) return false;
+	//if (!camera.load("models\\camera.3ds")) return false;
+	table.load("models\\table.obj");
+	vase.load("models\\vase.obj");
+	teapot.load("models\\utah_teapot_ultrares.obj");
 
 	// Initialise the View Matrix (initial position of the camera)
 	matrixView = rotate(mat4(1), radians(12.f), vec3(1, 0, 0));
@@ -73,10 +78,22 @@ void renderScene(mat4& matrixView, float time, float deltaTime)
 
 	// camera
 	m = matrixView;
-	m = translate(m, vec3(-3.0f, 0, 0.0f));
-	m = rotate(m, radians(180.f), vec3(0.0f, 1.0f, 0.0f));
-	m = scale(m, vec3(0.04f, 0.04f, 0.04f));
-	camera.render(m);
+	m = scale(m, vec3(0.006f, 0.006f, 0.006f));
+	table.render(2, m);
+	table.render(0, m);
+	table.render(1, m);
+	//m = translate(m, vec3(-3.0f, 0, 0.0f));
+	m = rotate(m, radians(90.f), vec3(0.0f, 1.0f, 0.0f));
+	table.render(0, m);
+	table.render(1, m);
+	m = rotate(m, radians(90.f), vec3(0.0f, 1.0f, 0.0f));
+	table.render(0, m);
+	table.render(1, m);
+	m = rotate(m, radians(90.f), vec3(0.0f, 1.0f, 0.0f));
+	table.render(0, m);
+	table.render(1, m);
+
+
 
 	// setup materials - blue
 	GLfloat rgbaBlue[] = { 0.2f, 0.2f, 0.8f, 1.0f };		// --- DEPRECATED
@@ -85,13 +102,21 @@ void renderScene(mat4& matrixView, float time, float deltaTime)
 
 	// teapot
 	m = matrixView;
-	m = translate(m, vec3(15.0f, 0, 0.0f));
+	m = translate(m, vec3(1.5f, 4.5f, 0.0f));
+	m = scale(m, vec3(0.1f, 0.1f, 0.1f));
+	m = rotate(m, radians(80.f), vec3(0.0f, 1.0f, 0.0f));
+	vase.render(m);
+
+	m = matrixView;
+	m = translate(m, vec3(-1.5f, 4.5f, 0.0f));
 	m = rotate(m, radians(120.f), vec3(0.0f, 1.0f, 0.0f));
+	teapot.render(m);
+
 	// the GLUT objects require the Model View Matrix setup
-	glMatrixMode(GL_MODELVIEW);								// --- DEPRECATED
-	glLoadIdentity();										// --- DEPRECATED
-	glMultMatrixf((GLfloat*)&m);							// --- DEPRECATED
-	glutSolidTeapot(2.0);
+	//glMatrixMode(GL_MODELVIEW);								// --- DEPRECATED
+	//glLoadIdentity();										// --- DEPRECATED
+	//glMultMatrixf((GLfloat*)&m);							// --- DEPRECATED
+	//glutSolidTeapot(2.0);
 }
 
 void onRender()
