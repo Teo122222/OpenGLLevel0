@@ -18,15 +18,21 @@ using namespace glm;
 C3dglModel table;
 C3dglModel vase;
 C3dglModel teapot;
+C3dglModel chick;
 
 // The View Matrix
 mat4 matrixView;
+
+// GLSL Program
+C3dglProgram program;
 
 // Camera & navigation
 float maxspeed = 4.f;	// camera max speed
 float accel = 4.f;		// camera acceleration
 vec3 _acc(0), _vel(0);	// camera acceleration and velocity vectors
 float _fov = 60.f;		// field of view (zoom)
+
+unsigned bufs[3];
 
 bool init()
 {
@@ -37,8 +43,31 @@ bool init()
 	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);	// this is the default one; try GL_LINE!
 
 	// setup lighting
-	glEnable(GL_LIGHTING);									// --- DEPRECATED
-	glEnable(GL_LIGHT0);									// --- DEPRECATED
+	//glEnable(GL_LIGHTING);									// --- DEPRECATED
+	//glEnable(GL_LIGHT0);									// --- DEPRECATED
+
+
+	// Initialise Shaders
+	C3dglShader vertexShader;
+	C3dglShader fragmentShader;
+
+	if (!vertexShader.create(GL_VERTEX_SHADER)) return false;
+	if (!vertexShader.loadFromFile("shaders/basic.vert.shader")) return false;
+	if (!vertexShader.compile()) return false;
+
+	if (!fragmentShader.create(GL_FRAGMENT_SHADER)) return false;
+	if (!fragmentShader.loadFromFile("shaders/basic.frag.shader")) return false;
+	if (!fragmentShader.compile()) return false;
+
+	if (!program.create()) return false;
+	if (!program.attach(vertexShader)) return false;
+	if (!program.attach(fragmentShader)) return false;
+	if (!program.link()) return false;
+	if (!program.use(true)) return false;
+
+	// glut additional setup
+	glutSetVertexAttribCoord3(program.getAttribLocation("aVertex"));
+	glutSetVertexAttribNormal(program.getAttribLocation("aNormal"));
 
 	// load your 3D models here!
 	//if (!camera.load("models\\camera.3ds")) return false;
@@ -64,17 +93,72 @@ bool init()
 	cout << "  Drag the mouse to look around" << endl;
 	cout << endl;
 
+	float vertices[] = {
+			-4, 0, -4, 4, 0, -4, 0, 7, 0, -4, 0, 4, 4, 0, 4, 0, 7, 0,
+			-4, 0, -4, -4, 0, 4, 0, 7, 0, 4, 0, -4, 4, 0, 4, 0, 7, 0,
+			-4, 0, -4, -4, 0, 4, 4, 0, -4, 4, 0, 4 };
+	float normals[] = {
+		0, 4, -7, 0, 4, -7, 0, 4, -7, 0, 4, 7, 0, 4, 7, 0, 4, 7,
+		-7, 4, 0, -7, 4, 0, -7, 4, 0, 7, 4, 0, 7, 4, 0, 7, 4, 0,
+		0, -1, 0, 0, -1, 0, 0, -1, 0, 0, -1, 0 };
+	unsigned indices[] = {
+	0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 13, 14, 15 };
+	
+	//Generate buffers
+	glGenBuffers(3, bufs);
+	// prepare vertex data
+	glBindBuffer(GL_ARRAY_BUFFER, bufs[0]);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+
+	// prepare normal data
+	glBindBuffer(GL_ARRAY_BUFFER, bufs[1]);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(normals), normals, GL_STATIC_DRAW);
+
+	// prepare indices array
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, bufs[2]);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
+
+
+
 	return true;
+}
+
+
+void renderPyramid() {
+	// Get Attribute Locations
+	GLuint attribVertex = program.getAttribLocation("aVertex");
+	GLuint attribNormal = program.getAttribLocation("aNormal");
+
+	// Enable vertex attribute arrays
+	glEnableVertexAttribArray(attribVertex);
+	glEnableVertexAttribArray(attribNormal);
+
+	// Bind (activate) the vertex buffer and set the pointer to it
+	glBindBuffer(GL_ARRAY_BUFFER, bufs[0]);
+	glVertexAttribPointer(attribVertex, 3, GL_FLOAT, GL_FALSE, 0, 0);
+
+	// Bind (activate) the normal buffer and set the pointer to it
+	glBindBuffer(GL_ARRAY_BUFFER, bufs[1]);
+	glVertexAttribPointer(attribNormal, 3, GL_FLOAT, GL_FALSE, 0, 0);
+
+	// Draw triangles – using index buffer
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, bufs[2]);
+	glDrawElements(GL_TRIANGLES, 18, GL_UNSIGNED_INT, 0);
+
+	// Disable arrays
+	glDisableVertexAttribArray(attribVertex);
+	glDisableVertexAttribArray(attribNormal);
 }
 
 void renderScene(mat4& matrixView, float time, float deltaTime)
 {
 	mat4 m;
 
-	// setup materials - grey
-	GLfloat rgbaGrey[] = { 0.6f, 0.6f, 0.6f, 1.0f };		// --- DEPRECATED
-	glMaterialfv(GL_FRONT_AND_BACK, GL_DIFFUSE, rgbaGrey);	// --- DEPRECATED
-	glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT, rgbaGrey);	// --- DEPRECATED
+	//// setup materials - grey
+	//GLfloat rgbaGrey[] = { 0.6f, 0.6f, 0.6f, 1.0f };		// --- DEPRECATED
+	//glMaterialfv(GL_FRONT_AND_BACK, GL_DIFFUSE, rgbaGrey);	// --- DEPRECATED
+	//glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT, rgbaGrey);	// --- DEPRECATED
+	program.sendUniform("material", vec3(0.6f, 0.6f, 0.6f));
 
 	// camera
 	m = matrixView;
@@ -95,14 +179,15 @@ void renderScene(mat4& matrixView, float time, float deltaTime)
 
 
 
-	// setup materials - blue
-	GLfloat rgbaBlue[] = { 0.2f, 0.2f, 0.8f, 1.0f };		// --- DEPRECATED
-	glMaterialfv(GL_FRONT_AND_BACK, GL_DIFFUSE, rgbaBlue);	// --- DEPRECATED
-	glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT, rgbaBlue);	// --- DEPRECATED
+	//// setup materials - blue
+	//GLfloat rgbaBlue[] = { 0.2f, 0.2f, 0.8f, 1.0f };		// --- DEPRECATED
+	//glMaterialfv(GL_FRONT_AND_BACK, GL_DIFFUSE, rgbaBlue);	// --- DEPRECATED
+	//glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT, rgbaBlue);	// --- DEPRECATED
+	program.sendUniform("material", vec3(0.2f, 0.2f, 0.8f));
 
 	// teapot
 	m = matrixView;
-	m = translate(m, vec3(1.5f, 4.5f, 0.0f));
+	m = translate(m, vec3(0.f, 4.5f, 0.0f));
 	m = scale(m, vec3(0.1f, 0.1f, 0.1f));
 	m = rotate(m, radians(80.f), vec3(0.0f, 1.0f, 0.0f));
 	vase.render(m);
@@ -111,13 +196,25 @@ void renderScene(mat4& matrixView, float time, float deltaTime)
 	m = translate(m, vec3(-1.5f, 4.5f, 0.0f));
 	m = rotate(m, radians(120.f), vec3(0.0f, 1.0f, 0.0f));
 	teapot.render(m);
+	
+	static float angle = 0.f;
+	angle += (deltaTime* 10.f);
+	m = matrixView;
+	m = translate(m, vec3(2.f, 5.96f, 0.0f));
+	m = rotate(m, radians(180.f), vec3(1.0f, 0.0f, 0.0f));
+	m = rotate(m, radians(angle), vec3(0.0f, 1.f, 0.0f));
+	m = scale(m, vec3(0.2f, 0.2f, 0.2f));
+	program.sendUniform("matrixModelView", m);
+	renderPyramid();
 
 	// the GLUT objects require the Model View Matrix setup
 	//glMatrixMode(GL_MODELVIEW);								// --- DEPRECATED
 	//glLoadIdentity();										// --- DEPRECATED
 	//glMultMatrixf((GLfloat*)&m);							// --- DEPRECATED
+
 	//glutSolidTeapot(2.0);
 }
+
 
 void onRender()
 {
@@ -156,10 +253,11 @@ void onReshape(int w, int h)
 	glViewport(0, 0, w, h);
 	mat4 matrixProjection = perspective(radians(_fov), ratio, 0.02f, 1000.f);
 
-	// Setup the Projection Matrix
-	glMatrixMode(GL_PROJECTION);							// --- DEPRECATED
-	glLoadIdentity();										// --- DEPRECATED
-	glMultMatrixf((GLfloat*)&matrixProjection);				// --- DEPRECATED
+	//// Setup the Projection Matrix
+	//glMatrixMode(GL_PROJECTION);							// --- DEPRECATED
+	//glLoadIdentity();										// --- DEPRECATED
+	//glMultMatrixf((GLfloat*)&matrixProjection);				// --- DEPRECATED
+	program.sendUniform("matrixProjection", matrixProjection);
 }
 
 // Handle WASDQE keys
