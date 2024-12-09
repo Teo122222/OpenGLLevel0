@@ -74,6 +74,7 @@ bool init()
 	table.load("models\\table.obj");
 	vase.load("models\\vase.obj");
 	teapot.load("models\\utah_teapot_ultrares.obj");
+	chick.load("models\\chicken.obj");
 
 	// Initialise the View Matrix (initial position of the camera)
 	matrixView = rotate(mat4(1), radians(12.f), vec3(1, 0, 0));
@@ -158,12 +159,14 @@ void renderScene(mat4& matrixView, float time, float deltaTime)
 	//GLfloat rgbaGrey[] = { 0.6f, 0.6f, 0.6f, 1.0f };		// --- DEPRECATED
 	//glMaterialfv(GL_FRONT_AND_BACK, GL_DIFFUSE, rgbaGrey);	// --- DEPRECATED
 	//glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT, rgbaGrey);	// --- DEPRECATED
-	program.sendUniform("material", vec3(0.6f, 0.6f, 0.6f));
+	program.sendUniform("material", vec3(0.4f, 0.2f, 0.f));
 
-	// camera
+	// table
 	m = matrixView;
 	m = scale(m, vec3(0.006f, 0.006f, 0.006f));
 	table.render(2, m);
+	//Chairs
+	program.sendUniform("material", vec3(0.6f, 0.6f, 0.6f));
 	table.render(0, m);
 	table.render(1, m);
 	//m = translate(m, vec3(-3.0f, 0, 0.0f));
@@ -183,22 +186,25 @@ void renderScene(mat4& matrixView, float time, float deltaTime)
 	//GLfloat rgbaBlue[] = { 0.2f, 0.2f, 0.8f, 1.0f };		// --- DEPRECATED
 	//glMaterialfv(GL_FRONT_AND_BACK, GL_DIFFUSE, rgbaBlue);	// --- DEPRECATED
 	//glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT, rgbaBlue);	// --- DEPRECATED
-	program.sendUniform("material", vec3(0.2f, 0.2f, 0.8f));
+	
 
-	// teapot
+	program.sendUniform("material", vec3(0.2f, 0.2f, 0.8f));
 	m = matrixView;
 	m = translate(m, vec3(0.f, 4.5f, 0.0f));
 	m = scale(m, vec3(0.1f, 0.1f, 0.1f));
 	m = rotate(m, radians(80.f), vec3(0.0f, 1.0f, 0.0f));
 	vase.render(m);
 
+
+	program.sendUniform("material", vec3(0.f, 0.8f, 0.f));
 	m = matrixView;
-	m = translate(m, vec3(-1.5f, 4.5f, 0.0f));
+	m = translate(m, vec3(-1.7f, 4.5f, 0.0f));
 	m = rotate(m, radians(120.f), vec3(0.0f, 1.0f, 0.0f));
 	teapot.render(m);
 	
+	program.sendUniform("material", vec3(0.8f, 0.f, 0.f));
 	static float angle = 0.f;
-	angle += (deltaTime* 10.f);
+	angle += (deltaTime* 20.f);
 	m = matrixView;
 	m = translate(m, vec3(2.f, 5.96f, 0.0f));
 	m = rotate(m, radians(180.f), vec3(1.0f, 0.0f, 0.0f));
@@ -206,6 +212,13 @@ void renderScene(mat4& matrixView, float time, float deltaTime)
 	m = scale(m, vec3(0.2f, 0.2f, 0.2f));
 	program.sendUniform("matrixModelView", m);
 	renderPyramid();
+
+	program.sendUniform("material", vec3(0.8f, 0.8f, 0.2f));
+	m = matrixView;
+	m = translate(m, vec3(2.f, 6.44f, 0.0f));
+	m = rotate(m, radians(-angle), vec3(0.0f, 1.f, 0.0f));
+	m = scale(m, vec3(0.02f, 0.02f, 0.02f));
+	chick.render(m);
 
 	// the GLUT objects require the Model View Matrix setup
 	//glMatrixMode(GL_MODELVIEW);								// --- DEPRECATED
